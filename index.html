@@ -130,10 +130,10 @@
                 // sendTyping: true,    // defaults to false. set to true to send 'typing' activities to bot (and other users) when user is typing
             }, document.getElementById("BotChatGoesHere"));
             if (params['message']) {
-                botConnection.postActivity({type: "message", text: params['message'], from: user, locale: params['locale']}).subscribe(id => console.log("success to me"));
+                botConnection.postActivity({type: "message", text: params['message'], from: user, locale: params['locale']}).subscribe(function (id){console.log("success")});
             }
             if (params['event']) {
-                botConnection.postActivity({type: "event", value: params['eventValue'], from: user, name: params['event']}).subscribe(id => console.log("success to me"));
+                botConnection.postActivity({type: "event", value: params['eventValue'], from: user, name: params['event']}).subscribe(function (id){console.log("success")});
             }
         </script>
     </body>
