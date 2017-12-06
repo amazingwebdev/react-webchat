@@ -11,9 +11,10 @@ interface ISendActivity {
 }
 
 interface CommandValues {
-    client: () => (boolean | Promise<boolean>),
+    client?: () => (boolean | Promise<boolean>),
     server?: (conversationId: string, sendActivity: ISendActivity, json?: JSON) => void,
     do?: (nightmare: Nightmare) => any,
+    evalOtherWindow?: (nightmare: Nightmare) => (boolean | Promise<boolean>),
     alternateText?: string,
     urlAppend?: { [paramName: string]: any }
 }
@@ -121,6 +122,24 @@ var commands_map: CommandValuesMap = {
             sendActivity(conversationId, server_content.hero_card);
         }
     },
+    "card-actioncall": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('div.ac-container > div:nth-child(7) > div:nth-child(1) > div > img')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return new_win.title.indexOf('Bot Chat') === -1;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.receipt_card);
+        }
+    },
     "carousel": {
         client: function () {
             return document.querySelectorAll('.scroll.next').length > 0;
@@ -149,8 +168,8 @@ var commands_map: CommandValuesMap = {
         }),
         server: function (conversationId, sendActivity) {
             sendActivity(conversationId, server_content.car_card);
-        }
-    },
+        }       
+    },  
     "carousel-to-left": {
         client: () => new Promise((resolve) => {
             var right_arrow = document.querySelectorAll('.scroll.next:not([disabled])')[0] as HTMLButtonElement;
@@ -197,10 +216,85 @@ var commands_map: CommandValuesMap = {
             sendActivity(conversationId, server_content.car_card);
         }
     },
+    "content-multimedia": {
+        client: function () {
+            var images = document.querySelectorAll('img').length === 2;
+            var audios = document.querySelectorAll('audio').length === 2;
+            var videos = document.querySelectorAll('video').length === 2;
+
+            return images && audios && videos;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.multimedia_card);
+        }
+    },
+    "document-plain": {
+        client: function () {
+            var link = document.querySelector('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot a') as HTMLAnchorElement;
+            if (!link) return false;
+
+            //check if value is encoded
+            var is_file = link.href.indexOf("test.txt") >= 0;
+            link.click();
+
+            return is_file && window.location.href.indexOf("localhost") !== -1;
+        },
+        server: function (res, sendActivity) {
+            sendActivity(res, server_content.document_plain);
+        }
+    },
+    "document-word": {
+        client: function () {
+            var link = document.querySelector('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot a') as HTMLAnchorElement;
+            if (!link) return false;
+
+            //check if value is encoded
+            return link.href.indexOf("test.docx") >= 0;
+        },
+        server: function (res, sendActivity) {
+            sendActivity(res, server_content.document_word);
+        }
+    },
     "herocard": {
         client: function () {
             var source = document.querySelectorAll('img')[0].src;
             return source.indexOf("surface1.jpg") >= 0;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.hero_card);
+        }
+    },
+    "herocard-cardtap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('.wc-card .ac-container .ac-container')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl2');
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.hero_card);
+        }
+    },
+    "herocard-imagetap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('img')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl1');
         },
         server: function (conversationId, sendActivity) {
             sendActivity(conversationId, server_content.hero_card);
@@ -221,12 +315,66 @@ var commands_map: CommandValuesMap = {
             sendActivity(conversationId, server_content.image_raw);
         }
     },
+    "image-svg": {
+        client: function () {
+            var source = document.querySelectorAll('img')[0].src;
+            return source.indexOf("bf_square.svg") >= 0;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.image_svg);
+        }
+    },
     "markdown": {
         client: function () {
             return document.querySelectorAll('h3').length > 5;
         },
         server: function (conversationId, sendActivity) {
             sendActivity(conversationId, server_content.mar_card);
+        }
+    },
+    "markdown-image-no-title": {
+        client: function () {
+            var img = document.querySelectorAll('img')[0] as HTMLImageElement;
+            return document.querySelectorAll('img')[0].getAttribute('src').indexOf('surface1.jpg') >= 0 && img.getAttribute('title') === null;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.mar_card);
+        }
+    },
+    "markdown-image-title": {
+        client: function () {
+            var img = document.querySelectorAll('img')[0] as HTMLImageElement;
+            return img.getAttribute('src').indexOf('surface1.jpg?abc=123%20456') >= 0 && img.getAttribute('title').indexOf('Title for Surface!') >= 0;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.mar_encode_card);
+        }
+    },
+    "markdown-newlines-single": {
+        client: function () {
+            var last_bubble = document.querySelector('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot .format-markdown');
+            return last_bubble.getElementsByTagName('p').length === 2 && last_bubble.getElementsByTagName('br').length === 3;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.mar_newlines_single_card);
+        }
+    },
+    "markdown-newlines-double": {
+        client: function () {
+            var last_bubble = document.querySelector('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot .format-markdown');
+            return last_bubble.getElementsByTagName('p').length === 4 && last_bubble.getElementsByTagName('br').length === 3;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.mar_newlines_double_card);
+        }
+    },
+    "markdown-newlines-double-double": {
+        client: function () {
+            var last_bubble = document.querySelector('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot .format-markdown');
+            return last_bubble.getElementsByTagName('p').length === 4 && last_bubble.getElementsByTagName('br').length === 5;
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.mar_newlines_ddouble_card);
         }
     },
     "markdown-url-needs-encoding": {
@@ -320,6 +468,51 @@ var commands_map: CommandValuesMap = {
             sendActivity(conversationId, server_content.receipt_card);
         }
     },
+    "receiptcard-cardtap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('.wc-card .ac-container .ac-container')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl2');
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.receipt_card);
+        }
+    },
+    "receiptcard-imagetap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('img')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl1');
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.receipt_card);
+        }
+    },
+    "text-empty": {
+        client: function () {
+            var last_message = document.querySelectorAll('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot .format-markdown')[0];
+            return last_message.innerHTML === '&nbsp;';
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.text_empty_card);
+        }
+    },
     "thumbnailcard": {
         client: function () {
             var source = document.querySelectorAll('img')[0].src;
@@ -329,10 +522,46 @@ var commands_map: CommandValuesMap = {
             sendActivity(conversationId, server_content.thumbnail_card);
         }
     },
+    "thumbnailcard-cardtap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('.wc-card .ac-container .ac-container')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl2');
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.thumbnail_card);
+        }
+    },
+    "thumbnailcard-imagetap": {
+        do: function (nightmare) {
+            const waitWindowLoad = nightmare['waitWindowLoad'].bind(nightmare);
+            nightmare.click('img')
+                .wait(2000);
+            waitWindowLoad();
+        },
+        evalOtherWindow: async function (nightmare) {
+            const windows_fn = await nightmare['windows'].bind(nightmare);
+            const windows = await windows_fn();
+            const new_win = await windows[1];
+            console.log("Window 2 Title: " + new_win.title);
+            return !!~new_win.title.indexOf('OpenUrl1');
+        },
+        server: function (conversationId, sendActivity) {
+            sendActivity(conversationId, server_content.thumbnail_card);
+        }
+    },
     "upload": {
         do: function (nightmare) {
             try {
-                const upload = <(selector: string, paths: string[]) => Nightmare>(<any> nightmare.upload.bind(nightmare));
+                const upload = <(selector: string, paths: string[]) => Nightmare>(<any>nightmare.upload.bind(nightmare));
 
                 upload('#wc-upload-input', [
                     path.resolve(__dirname, 'assets', 'surface1.jpg'),
@@ -348,7 +577,7 @@ var commands_map: CommandValuesMap = {
             var img = document.querySelectorAll('.wc-message-wrapper:last-child .wc-message.wc-message-from-bot img')[0] as HTMLImageElement;
             return img.src.indexOf('/uploads') >= 0;
         },
-        server: function(conversationId, sendActivity){
+        server: function (conversationId, sendActivity) {
             sendActivity(conversationId, server_content.upload_txt);
         }
     },
@@ -450,7 +679,7 @@ var commands_map: CommandValuesMap = {
             nightmare.click('.wc-mic')
                 .wait(1000)
                 .type('.wc-textbox input', '')
-                .wait(2000);
+                .wait(3000);
         },
         client: function () {
             return (((document.querySelector('.wc-shellinput') as HTMLInputElement).placeholder === 'Type your message...'));
@@ -459,7 +688,7 @@ var commands_map: CommandValuesMap = {
     "focus on type": {
         do: function (nightmare) {
             nightmare
-                .type('.wc-chatview-panel', 'Hi!')
+                .type('.wc-message-groups', 'Hi!')
                 .wait(1000);
         },
         client: function () {
@@ -469,13 +698,26 @@ var commands_map: CommandValuesMap = {
     "type on Adaptive Cards": {
         do: function (nightmare) {
             nightmare
-                .type('.wc-chatview-panel', 'card Inputs')
+                .type('.wc-message-groups', 'card Inputs')
                 .click('.wc-send')
                 .wait('.ac-input[placeholder="Name"]')
                 .type('.ac-input[placeholder="Name"]', 'John Doe');
         },
         client: function () {
             return (((document.querySelector('.ac-input') as HTMLInputElement).value === 'John Doe'));
+        }
+    },
+    "click on Adaptive Cards": {
+        do: function (nightmare) {
+            nightmare
+                .type('.wc-message-groups', 'button-imback')
+                .click('.wc-send')
+                .wait('.ac-pushButton')
+                .click('.ac-pushButton')
+                .wait('.wc-message-groups:focus');
+        },
+        client: function () {
+            return !!document.querySelector('.wc-message-groups:focus');
         }
     }
     /*
