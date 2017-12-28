@@ -120,6 +120,17 @@
                 webSocket: params['webSocket'] && params['webSocket'] === "true" // defaults to true
             });
 
+            window.addEventListener("message", (event) => {
+                if (event.data.trigger) {
+                    botConnection.postActivity({
+                        type: "event",
+                        from: user,
+                        name: "BeginDebugScenario",
+                        value: event.data,
+                    }).subscribe(function (id){console.log("success!")});                    
+                }
+            } , false);
+
             BotChat.App({
                 botConnection: botConnection,
                 user: user,
