@@ -120,6 +120,23 @@
                 webSocket: params['webSocket'] && params['webSocket'] === "true" // defaults to true
             });
 
+            botConnection.activity$.filter(function(activity) {
+                return activity.type === 'message'
+            }).subscribe(function(e) {
+                parent.postMessage(e, "*");
+            })
+
+            window.addEventListener("message", (event) => {
+                if (event.data.trigger) {
+                    botConnection.postActivity({
+                        type: "event",
+                        from: user,
+                        name: "BeginDebugScenario",
+                        value: event.data,
+                    }).subscribe(function (id){console.log("success!")});                    
+                }
+            } , false);
+
             BotChat.App({
                 botConnection: botConnection,
                 user: user,
@@ -131,6 +148,7 @@
             }, document.getElementById("BotChatGoesHere"));
             if (params['message']) {
                 botConnection.postActivity({type: "message", text: params['message'], from: user, locale: params['locale']}).subscribe(function (id){console.log("success!")});
+                botConnection.addEventListener()
             }
             if (params['event']) {
                 botConnection.postActivity({type: "event", value: params['eventValue'], from: user, name: params['event']}).subscribe(function (id){console.log("success!")});
