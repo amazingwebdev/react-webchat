@@ -2,6 +2,13 @@ import { Speech, Func, Action } from '../SpeechModule'
 import * as konsole from '../Konsole';
 import * as CognitiveSpeech from 'microsoft-speech-browser-sdk/Speech.Browser.Sdk'
 
+// Extending the default definition with browser specific definitions for backward compatibility
+interface INavigatorUserMedia extends NavigatorUserMedia {
+    webkitGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: NavigatorUserMediaSuccessCallback, errorCallback: NavigatorUserMediaErrorCallback) => void;
+    mozGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: NavigatorUserMediaSuccessCallback, errorCallback: NavigatorUserMediaErrorCallback) => void;
+    msGetUserMedia?: (constraints: MediaStreamConstraints, successCallback: NavigatorUserMediaSuccessCallback, errorCallback: NavigatorUserMediaErrorCallback) => void;
+}
+
 export interface ICognitiveServicesSpeechRecognizerProperties {
     locale?: string,
     subscriptionKey?: string,
@@ -58,7 +65,13 @@ export class SpeechRecognizer implements Speech.ISpeechRecognizer {
             throw 'Error: The CognitiveServicesSpeechRecognizer requires either a subscriptionKey or a fetchCallback and fetchOnExpiryCallback.';
         }
 
-        if(window.navigator.getUserMedia){
+        var nav = window.navigator as INavigatorUserMedia;
+
+        if(nav.getUserMedia ||
+            nav.webkitGetUserMedia ||
+            nav.mozGetUserMedia ||
+            nav.msGetUserMedia ||
+            nav.mediaDevices.getUserMedia){
             this.actualRecognizer = CognitiveSpeech.CreateRecognizer(recognizerConfig, authentication);
         }
         else{

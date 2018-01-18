@@ -38,8 +38,13 @@
 		<div id="BotChatGoesHere"></div>
 
         <script src="botchat.js?v=5"></script>
-        <!--If you do not want to use Cognitive Services lib, comment out the following line -->
-        <!--<script src="CognitiveServices.js"></script>-->
+        <script type="text/javascript">
+            var params = BotChat.queryParams(location.search);
+
+            if (params['speechApiKey']) {
+                document.write('<scr'+'ipt src="CognitiveServices.js"></sc'+'ript>');
+            }
+        </script>
         <script>
             var params = BotChat.queryParams(location.search);
 
@@ -59,32 +64,32 @@
             //
             // var speechOptions = null;
 
-            // Option 2 : native browser speech (not supported by all browsers, no speech recognition priming support)
+            // Option 2 : Cognitive services speech recognition using API key (cross browser, speech priming support)
+            var speechOptions = null;
+            if (params['speechApiKey']) {
+                var speechOptions = {
+                    speechRecognizer: new CognitiveServices.SpeechRecognizer( { subscriptionKey: params['speechApiKey'] } ),
+
+                    speechSynthesizer: new CognitiveServices.SpeechSynthesizer(
+                        {
+                            subscriptionKey: params['speechApiKey'],
+                            gender: CognitiveServices.SynthesisGender.Female,
+                            voiceName: params['speechApiVoice'] || 'Microsoft Server Speech Text to Speech Voice (en-US, JessaRUS)'
+                        })
+                }
+            }
+            // Option 3 : native browser speech (not supported by all browsers, no speech recognition priming support)
             
 
             // Note that chrome automatically blocks speech if the html file is loaded from disk. You can run a server locally 
             // or launch chrome (close all the existing chrome browsers) with the following option:
             // chrome.exe --allow-file-access-from-files <sampleHtmlFile>
-            var speechOptions = null;
-            if (window.hasOwnProperty("webkitSpeechRecognition")) {
+            else if (window.hasOwnProperty("webkitSpeechRecognition")) {
                 speechOptions = {
                     speechRecognizer: new BotChat.Speech.BrowserSpeechRecognizer(),
                     speechSynthesizer: new BotChat.Speech.BrowserSpeechSynthesizer()
                 };
            }
-
-            // // Option 3 : Cognitive services speech recognition using API key (cross browser, speech priming support)
-            //
-            //var speechOptions = {
-            //    speechRecognizer: new CognitiveServices.SpeechRecognizer( { subscriptionKey: 'YOUR_COGNITIVE_SPEECH_API_KEY' } ),
-            //
-            //    speechSynthesizer: new CognitiveServices.SpeechSynthesizer(
-            //        {
-            //            subscriptionKey: 'YOUR_COGNITIVE_SPEECH_API_KEY',
-            //            gender: CognitiveServices.SynthesisGender.Female,
-            //            voiceName: 'Microsoft Server Speech Text to Speech Voice (en-US, JessaRUS)'
-            //        })
-            //}
 
             // // Option 4 : Cognitive services speech recognition using a token (usually generated in a secure backend using your API key)
             //
