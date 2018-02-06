@@ -1,4 +1,7 @@
-# Microsoft Bot Framework Web Chat
+# Microsoft Health Bot Web Chat
+
+You will need to obtain your Web Chat secret from the Health Bot Team. Please refer to [Microsoft Health Bot](https://www.microsoft.com/en-us/research/project/health-bot/) for a private preview and details.
+
 
 Embeddable web chat control for the [Microsoft Bot Framework](http://www.botframework.com) using the [DirectLine](https://docs.botframework.com/en-us/restapi/directline3/) API.
 
