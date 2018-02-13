@@ -1,4 +1,4 @@
-# Microsoft Health Bot Web Chat
+# react-webchat
 
 **Note: In order you use this Web Chat with the Health Bot secvice, you will need to obtain your Web Chat secret from the Health Bot Team. Please refer to [Microsoft Health Bot](https://www.microsoft.com/en-us/research/project/health-bot/) for a private preview and details.**
 
