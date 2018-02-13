@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # react-webchat
 
 **Note: In order you use this Web Chat with the Health Bot secvice, you will need to obtain your Web Chat secret from the Health Bot Team. Please refer to [Microsoft Health Bot](https://www.microsoft.com/en-us/research/project/health-bot/) for a private preview and details.**
@@ -300,6 +299,9 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 © 2016 Microsoft Corporation
 
 [MIT License](/LICENSE)
+=======
+# react-webchat
+>>>>>>> 8ba40d2698a293e9f201872f51fd4c1341dadfc7
 =======
 # react-webchat
 >>>>>>> 8ba40d2698a293e9f201872f51fd4c1341dadfc7
